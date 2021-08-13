@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include "aes.h"
+#include "alg.h"
 
 
 
@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
 		std::cout << "argc error" << std::endl;
 		return 0;
 	}
-	std::cout << "kskdk" << argv[1] << std::endl;
+	
 	if (strcmp(argv[1], "-e") == 0) {
 		std::cout << "11l " << std::endl;
 		FILE * infile = fopen("input.zip", "rb");
@@ -22,31 +22,38 @@ int main(int argc, char** argv) {
 		size = ftell(infile);
 		std::cout << "file size = " << size << std::endl;
 		fseek(infile, 0L, SEEK_SET);
-		void *buf = malloc(size + 16);
+		void *buf = malloc(size + 1);
 		fread(buf, 1, size, infile);
 
-		void *out = malloc(size + 32);
-		memset(out, 0, size + 32);
-		std::cout << "begin enc ..." << std::endl;
-		enc((char*)buf, size, (char*)out);
+		void *out = malloc(size + 16);
+		memset(out, 0, size + 16);
+		unsigned int out_len = 0;
 		
-		fwrite(out, size + 32, 1, outfile);
+		enc_aes((unsigned char*)buf, size, (unsigned char*)out, &out_len);
+		
+		fwrite(out, out_len, 1, outfile);
 	} else {
-		std::cout << "11l ll" << std::endl;
 		FILE * infile = fopen("result.zip", "rb");
 		FILE * outfile = fopen("input.zip", "w");
 		size_t size  = 0;
 		fseek(infile, 0L, SEEK_END);
 		size = ftell(infile);
+		if (size > (1L << 30)) {
+			std::cout << "input file is too big, should < 1GB" << std::endl;
+			return 0;
+		}
 		fseek(infile, 0L, SEEK_SET);
 		void *buf = malloc(size + 16);
-		fread(buf, 2, size, infile);
+		fread(buf, 1, size, infile);
 
-		void *out = malloc(size + 32);
-		memset(out, 0, size + 32);
-		dec((char*)buf, size, (char*)out);
+		void *out = malloc(size + 1);
+		memset(out, 0, size + 1);
+		unsigned int out_len;
+		std::cout << "dec size = " << size << std::endl;
+		dec_aes((unsigned char*)buf, size, (unsigned char*)out, &out_len);
+		std::cout << "out_len = " << out_len << std::endl;
 		
-		fwrite(out, size + 32, 1, outfile);
+		fwrite(out, out_len, 1, outfile);
 	}
 
 	return 1;
